@@ -11,7 +11,6 @@ import hashlib
 def process_inline_formatting(text):
     """Process inline markdown formatting:
     **bold**, __italic__, [[MD5]], ((remove c))."""
-    # Process MD5: [[text]] -> MD5 hash (lowercase)
     def md5_replace(match):
         content = match.group(1)
         md5_hash = hashlib.md5(content.encode('utf-8')).hexdigest()
@@ -19,14 +18,12 @@ def process_inline_formatting(text):
 
     text = re.sub(r'\[\[(.+?)\]\]', md5_replace, text)
 
-    # Process remove c: ((text)) -> remove all 'c' and 'C' characters
     def remove_c_replace(match):
         content = match.group(1)
         return content.translate(str.maketrans('', '', 'cC'))
 
     text = re.sub(r'\(\((.+?)\)\)', remove_c_replace, text)
 
-    # Process bold: **text** -> <b>text</b>
     text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
     # Process italic: __text__ -> <em>text</em>
     text = re.sub(r'__(.+?)__', r'<em>\1</em>', text)
@@ -69,7 +66,6 @@ def main():
         for line in f_md:
             stripped = line.rstrip("\n")
 
-            # Headings
             if stripped.startswith("#"):
                 hashes, _, text = stripped.partition(" ")
                 level = len(hashes)
@@ -83,7 +79,6 @@ def main():
                     f_out.write(f"<h{level}>{formatted_text}</h{level}>\n")
                     continue
 
-            # Ordered list item
             if stripped.startswith("* "):
                 output_paragraph()
                 if not in_list:
@@ -95,7 +90,6 @@ def main():
                 f_out.write(f"<li>{formatted_text}</li>\n")
                 continue
 
-            # Unordered list item
             if stripped.startswith("- "):
                 output_paragraph()
                 if not in_list:
@@ -107,21 +101,17 @@ def main():
                 f_out.write(f"<li>{formatted_text}</li>\n")
                 continue
 
-            # Close list if we were in one and reached a non-list line.
             if in_list:
                 f_out.write(f"</{list_type}>\n")
                 in_list = False
                 list_type = None
 
-            # Blank line: output paragraph if we have one
             if not stripped:
                 output_paragraph()
                 continue
 
-            # Regular text line: add to paragraph
             paragraph_lines.append(stripped)
 
-        # Output any remaining paragraph and close list if needed
         output_paragraph()
         if in_list:
             f_out.write(f"</{list_type}>\n")
